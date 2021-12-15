@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="travelontip-external-systemmFlow" doc:id="f8651344-c197-4dbc-836d-064772c21d93" >
+		<http:listener doc:name="Listener" doc:id="c13f4ba2-c295-4ecf-9505-cb69814d5963" path="${http.listener.path}" config-ref="HTTP_Listener_config">
+			<http:error-response statusCode="#[vars.statusCode as number]">
+				<http:body ><![CDATA[#[vars.errorMSG default "critical Error"]]]></http:body>
+			</http:error-response>
+		</http:listener>
+		<ee:transform doc:name="Transform Message" doc:id="32c9910d-652a-46c7-86b0-c7d018277615" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="serviceType" ><![CDATA[%dw 2.0
+output application/java
+---
+attributes.uriParams.serviceType]]></ee:set-variable>
+				<ee:set-variable variableName="transactionId" ><![CDATA[%dw 2.0
+output application/java
+---
+[attributes.headers.transactionId]]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="75d2fe92-143e-45d7-8480-4e59c4e892eb" message="Request Received for FastGo External System for TransactionId #[vars.transactionId]"/>
+		<choice doc:name="Choice" doc:id="70f1a05f-929a-4907-a187-79abe2770778" >
+			<when expression='#[vars.serviceType=="routes"]'>
+				<logger level="INFO" doc:name="Logger" doc:id="211e0a5f-7159-4db4-9109-c4d0ae61685d" message="Routes Flow Called for FastGo External System for TransactionId  #[attributes.headers.transactionId]"/>
+				<flow-ref doc:name="Flow Reference" doc:id="9804b42a-feb2-46c8-bb8e-5339112c5ebe" name="TravelOnTip-getRoutes-ImplimentationSub_Flow"/>
+			</when>
+			<when expression='#[vars.serviceType=="schedules"]'>
+				<logger level="INFO" doc:name="Logger" doc:id="41f0a3b0-dd7f-4455-bc61-6918069d3466" message="Schedule Flow Called for FastGo External System for TransactionId #[attributes.headers.transactionId]"/>
+				<flow-ref doc:name="Flow Reference" doc:id="31df6d5a-5f83-4464-a588-348ef80ec460" name="TravelOnTip-getSchedules-ImplimentationSub_Flow"/>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="dfcde359-b640-45a2-aafe-884c36b17061" message="URI Parameter is Not Correct For FastGo External System for TransactionId #[attributes.headers.transactionId]"/>
+			</otherwise>
+		</choice>
+		<logger level="INFO" doc:name="Logger" doc:id="069cc96a-7224-4882-bad9-f5b313376b1e" message="Response Sent for TravelOnTip External System for TransactionId #[attributes.headers.transactionId]"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="4e6db940-fbf2-4034-b136-a5da64c9277b" >
+				<logger level="INFO" doc:name="Logger" doc:id="0e490048-869d-4bff-be8c-9d32df98085d" message="Error Occured for TravelOnTip External System for transactionId #[vars.transactionId] reason: #[error.errorMessage] errorType #[error.errorType]"/>
+				<ee:transform doc:name="Transform Message" doc:id="7aed5034-ef97-483f-912e-bb3f0cb0bc3a" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+500]]></ee:set-payload>
+					</ee:message>
+					<ee:variables >
+						<ee:set-variable variableName="statusCode" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	
+}]]></ee:set-variable>
+						<ee:set-variable variableName="errorMSG" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"Error Message": "Error in TravelOnTip System"
+}]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+</mule>

@@ -1,0 +1,15 @@
+mule:
+  env: "local"
+http:
+  listener:
+    host: "localhost"
+    port: "9081"
+    path: "/travelOnTipcall/{serviceType}"
+    
+db:
+  oracle:
+    host: "localhost"
+    port: "1522"
+    username: "system"
+    password: "SYSTEM"
+   
